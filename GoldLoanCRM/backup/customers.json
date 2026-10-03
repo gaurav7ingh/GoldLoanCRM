@@ -1,0 +1,14 @@
+{
+  "customers": [
+    {
+      "name": "gaurav singh",
+      "phone": "9368644155",
+      "address": "melaghat",
+      "status": "New",
+      "followup": "",
+      "notes": "",
+      "createdAt": "2026-10-03T15:30:01.080Z",
+      "loans": []
+    }
+  ]
+}
