@@ -1,0 +1,307 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<meta name="theme-color" content="#111827">
+<title>Gold Loan CRM</title>
+<style>
+*{box-sizing:border-box}body{margin:0;font-family:system-ui,-apple-system,Segoe UI,Roboto,Arial,sans-serif;background:#f3f4f6;color:#111827}
+header{background:#111827;color:#fff;padding:16px;text-align:center;position:sticky;top:0;z-index:5}header h1{margin:0;font-size:20px}
+.container{max-width:760px;margin:auto;padding:14px;padding-bottom:80px}.card{background:#fff;border-radius:14px;padding:16px;margin-bottom:14px;box-shadow:0 2px 8px #0000000d}
+input,textarea,select,button{width:100%;padding:12px;margin:6px 0 12px;border:1px solid #d1d5db;border-radius:9px;font-size:15px;background:#fff}button{border:0;background:#111827;color:#fff;font-weight:700;cursor:pointer}button.secondary{background:#6b7280}button.green{background:#15803d}button.blue{background:#2563eb}button.red{background:#dc2626}
+.hidden{display:none!important}.grid{display:grid;grid-template-columns:repeat(3,1fr);gap:9px}.stat{background:#fff;border-radius:12px;padding:13px;text-align:center}.num{font-size:21px;font-weight:800}.label{font-size:12px;color:#6b7280}
+.item{background:#fff;border:1px solid #e5e7eb;border-radius:12px;padding:14px;margin-bottom:10px}.item h3{margin:0 0 4px;font-size:17px}.muted{color:#6b7280;font-size:13px}.row{display:flex;gap:8px}.row>*{flex:1}.badge{display:inline-block;padding:4px 8px;border-radius:999px;font-size:12px;font-weight:700;margin:3px 3px 3px 0}.overdue{background:#fee2e2;color:#991b1b}.today{background:#fef3c7;color:#92400e}.upcoming{background:#dcfce7;color:#166534}.neutral{background:#e5e7eb;color:#374151}.loan{border:1px solid #e5e7eb;border-radius:12px;padding:13px;margin:10px 0}.loan-title{font-weight:800}.danger{background:#fee2e2;color:#991b1b;padding:10px;border-radius:9px;margin-bottom:10px}.success{background:#dcfce7;color:#166534;padding:10px;border-radius:9px;margin-bottom:10px}.tabs{display:flex;gap:7px;margin-bottom:12px}.tabs button{margin:0;font-size:13px}.tabs button.active{background:#2563eb}.small{font-size:12px;color:#6b7280}a{color:#2563eb}.top-space{margin-top:8px}
+@media(max-width:520px){.grid{grid-template-columns:1fr 1fr}.row{flex-direction:column;gap:0}}
+</style>
+</head>
+<body>
+<header><h1>💰 Gold Loan CRM</h1></header>
+<main class="container">
+
+<section id="home">
+  <div class="grid">
+    <div class="stat"><div class="num" id="statCustomers">0</div><div class="label">Customers</div></div>
+    <div class="stat"><div class="num" id="statLoans">0</div><div class="label">Active Loans</div></div>
+    <div class="stat"><div class="num" id="statDue">0</div><div class="label">Interest Due</div></div>
+  </div>
+  <div class="card top-space">
+    <button class="green" onclick="show('addCustomer')">➕ Add Customer</button>
+    <button class="blue" onclick="show('customers');renderCustomers()">👥 Customers</button>
+    <button onclick="show('followups');renderFollowups()">📅 Follow-ups</button>
+  </div>
+  <div class="card">
+    <h3>Backup</h3>
+    <button class="secondary" onclick="exportBackup()">⬇ Export JSON Backup</button>
+    <input id="importFile" type="file" accept=".json" onchange="importBackup(event)">
+    <div class="small">Keep regular backups. Data is stored locally in this browser/device.</div>
+  </div>
+</section>
+
+<section id="addCustomer" class="hidden">
+  <div class="card">
+    <h2>Add Customer</h2>
+    <label>Name</label><input id="newName" autocomplete="name" placeholder="Customer name">
+    <label>Mobile Number</label><input id="newPhone" inputmode="numeric" maxlength="10" placeholder="10 digit mobile number">
+    <label>Address</label><textarea id="newAddress" placeholder="Address / area"></textarea>
+    <button class="green" onclick="addCustomer()">Save Customer</button>
+    <button class="secondary" onclick="goHome()">Back</button>
+  </div>
+</section>
+
+<section id="customers" class="hidden">
+  <div class="card">
+    <h2>Customers</h2>
+    <input id="search" oninput="renderCustomers()" placeholder="Search name, mobile or address">
+    <button class="green" onclick="show('addCustomer')">➕ Add Customer</button>
+    <button class="secondary" onclick="goHome()">Back</button>
+  </div>
+  <div id="customerList"></div>
+</section>
+
+<section id="profile" class="hidden">
+  <div class="card">
+    <button class="secondary" onclick="show('customers');renderCustomers()">← Customers</button>
+    <h2 id="pName"></h2>
+    <div>📞 <a id="pPhone"></a></div>
+    <div>📍 <span id="pAddress"></span></div>
+    <hr>
+    <h3>Customer Follow-up</h3>
+    <label>Status</label>
+    <select id="pStatus">
+      <option>New</option><option>Interested</option><option>Follow-up</option><option>Documents Pending</option><option>Applied</option><option>Disbursed</option><option>Lost</option>
+    </select>
+    <label>Next customer follow-up</label><input id="pFollowup" type="date">
+    <label>Notes</label><textarea id="pNotes" placeholder="Customer notes"></textarea>
+    <button class="green" onclick="saveCustomerUpdates()">Save Customer Updates</button>
+  </div>
+
+  <div class="card">
+    <h3>Disbursed Loans</h3>
+    <div id="loans"></div>
+    <button class="blue" onclick="showAddLoan()">➕ Add Disbursed Loan</button>
+  </div>
+
+  <div id="addLoanBox" class="card hidden">
+    <h3>Add Disbursed Loan</h3>
+    <label>Loan Amount</label><input id="loanAmount" type="number" min="0" step="0.01" placeholder="Example: 200000">
+    <label>Disbursement Date</label><input id="loanDate" type="date">
+    <label>Interest Payment Cycle</label>
+    <select id="loanCycle"><option value="1">1 Month</option><option value="3">3 Months</option></select>
+    <div class="small">Next interest due date is calculated automatically.</div>
+    <button class="green" onclick="addLoan()">Save Disbursed Loan</button>
+    <button class="secondary" onclick="document.getElementById('addLoanBox').classList.add('hidden')">Cancel</button>
+  </div>
+
+  <div class="card">
+    <button class="red" onclick="deleteCustomer()">Delete Customer</button>
+  </div>
+</section>
+
+<section id="followups" class="hidden">
+  <div class="card">
+    <h2>📅 Follow-ups</h2>
+    <div class="tabs">
+      <button id="tabInterest" class="active" onclick="setFollowTab('interest')">💰 Interest</button>
+      <button id="tabCustomer" onclick="setFollowTab('customer')">📞 Customers</button>
+    </div>
+    <button class="secondary" onclick="goHome()">Back</button>
+  </div>
+  <div id="followupList"></div>
+</section>
+
+</main>
+
+<script>
+const KEY='goldLoanCRM_v2';
+let db=JSON.parse(localStorage.getItem(KEY)||'{"customers":[]}');
+let selectedPhone=null, followTab='interest';
+
+function save(){localStorage.setItem(KEY,JSON.stringify(db));updateStats()}
+function esc(v){return String(v??'').replace(/[&<>"']/g,m=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#039;'}[m]))}
+function today(){return new Date().toISOString().slice(0,10)}
+function fmt(d){if(!d)return ''; const [y,m,day]=d.split('-'); return `${day}-${m}-${y}`}
+function addMonths(dateStr, months){
+  const d=new Date(dateStr+'T12:00:00'); const day=d.getDate();
+  d.setMonth(d.getMonth()+months);
+  if(d.getDate()!==day)d.setDate(0);
+  return d.toISOString().slice(0,10)
+}
+function show(id){
+  ['home','addCustomer','customers','profile','followups'].forEach(x=>document.getElementById(x).classList.add('hidden'));
+  document.getElementById(id).classList.remove('hidden');
+  window.scrollTo(0,0);
+}
+function goHome(){show('home');updateStats()}
+function updateStats(){
+  document.getElementById('statCustomers').textContent=db.customers.length;
+  const loans=db.customers.flatMap(c=>(c.loans||[]).map(l=>({...l,phone:c.phone})));
+  document.getElementById('statLoans').textContent=loans.length;
+  document.getElementById('statDue').textContent=loans.filter(l=>l.nextDue<=today()).length;
+}
+function addCustomer(){
+  const name=document.getElementById('newName').value.trim();
+  const phone=document.getElementById('newPhone').value.trim();
+  const address=document.getElementById('newAddress').value.trim();
+  if(!name)return alert('Enter customer name.');
+  if(!/^[0-9]{10}$/.test(phone))return alert('Enter a valid 10 digit mobile number.');
+  if(!address)return alert('Enter address.');
+  if(db.customers.some(c=>c.phone===phone))return alert('This mobile number already exists. Open the existing customer instead.');
+  db.customers.push({name,phone,address,status:'New',followup:'',notes:'',createdAt:new Date().toISOString(),loans:[]});
+  save();
+  document.getElementById('newName').value='';document.getElementById('newPhone').value='';document.getElementById('newAddress').value='';
+  alert('Customer saved.'); show('customers');renderCustomers();
+}
+function renderCustomers(){
+  const q=(document.getElementById('search')?.value||'').toLowerCase().trim();
+  const list=document.getElementById('customerList');
+  const arr=db.customers.filter(c=>c.name.toLowerCase().includes(q)||c.phone.includes(q)||c.address.toLowerCase().includes(q));
+  list.innerHTML=arr.slice().reverse().map(c=>`
+    <div class="item" onclick="openCustomer('${c.phone}')">
+      <h3>${esc(c.name)}</h3><div class="muted">📞 ${esc(c.phone)}</div>
+      <div class="muted">📍 ${esc(c.address)}</div>
+      <span class="badge neutral">${esc(c.status||'New')}</span>
+      ${(c.loans||[]).length?`<span class="badge upcoming">${c.loans.length} loan(s)</span>`:''}
+    </div>`).join('') || '<div class="card">No customers found.</div>';
+}
+function openCustomer(phone){
+  selectedPhone=phone; const c=db.customers.find(x=>x.phone===phone); if(!c)return;
+  show('profile');
+  document.getElementById('pName').textContent=c.name;
+  const a=document.getElementById('pPhone');a.textContent=c.phone;a.href='tel:'+c.phone;
+  document.getElementById('pAddress').textContent=c.address;
+  document.getElementById('pStatus').value=c.status||'New';
+  document.getElementById('pFollowup').value=c.followup||'';
+  document.getElementById('pNotes').value=c.notes||'';
+  document.getElementById('addLoanBox').classList.add('hidden');
+  renderLoans(c);
+}
+function saveCustomerUpdates(){
+  const c=db.customers.find(x=>x.phone===selectedPhone); if(!c)return;
+  c.status=document.getElementById('pStatus').value;c.followup=document.getElementById('pFollowup').value;c.notes=document.getElementById('pNotes').value;save();alert('Customer updated.');
+}
+function showAddLoan(){
+  document.getElementById('addLoanBox').classList.remove('hidden');
+  document.getElementById('loanDate').value=today();
+  document.getElementById('loanAmount').focus();
+}
+function addLoan(){
+  const c=db.customers.find(x=>x.phone===selectedPhone); if(!c)return;
+  const amount=Number(document.getElementById('loanAmount').value);
+  const date=document.getElementById('loanDate').value;
+  const cycle=Number(document.getElementById('loanCycle').value);
+  if(!(amount>0))return alert('Enter a valid loan amount.');
+  if(!date)return alert('Select disbursement date.');
+  const loan={id:Date.now().toString(),amount,date,cycle,lastPaid:null,nextDue:addMonths(date,cycle),payments:[]};
+  c.loans=c.loans||[];c.loans.push(loan);c.status='Disbursed';save();
+  document.getElementById('loanAmount').value='';document.getElementById('addLoanBox').classList.add('hidden');renderLoans(c);alert('Disbursed loan added.');
+}
+function dueClass(d){
+  if(d<today())return ['overdue','OVERDUE'];
+  if(d===today())return ['today','DUE TODAY'];
+  return ['upcoming','UPCOMING'];
+}
+function renderLoans(c){
+  const box=document.getElementById('loans');
+  box.innerHTML=(c.loans||[]).slice().reverse().map(l=>{
+    const [cl,label]=dueClass(l.nextDue);
+    return `<div class="loan">
+      <div class="loan-title">₹${Number(l.amount).toLocaleString('en-IN')}</div>
+      <div class="muted">Disbursed: ${fmt(l.date)} · Cycle: ${l.cycle} month(s)</div>
+      <div class="top-space"><span class="badge ${cl}">${label}</span> Interest due: <strong>${fmt(l.nextDue)}</strong></div>
+      ${l.lastPaid?`<div class="small">Last interest paid: ${fmt(l.lastPaid)}</div>`:''}
+      <div class="row top-space">
+        <button class="green" onclick="event.stopPropagation();payInterest('${l.id}')">✓ Interest Paid</button>
+        <button class="secondary" onclick="event.stopPropagation();editLoanCycle('${l.id}')">Update Cycle</button>
+      </div>
+    </div>`
+  }).join('') || '<div class="small">No disbursed loans yet.</div>';
+}
+function payInterest(id){
+  const c=db.customers.find(x=>x.phone===selectedPhone);const l=(c.loans||[]).find(x=>x.id===id);if(!l)return;
+  const paid=prompt('Interest paid date (YYYY-MM-DD):',today());if(!paid)return;
+  if(!/^\\d{4}-\\d{2}-\\d{2}$/.test(paid))return alert('Use YYYY-MM-DD.');
+  const cycle=Number(prompt('Next cycle: enter 1 for 1 month or 3 for 3 months',String(l.cycle))||l.cycle);
+  if(![1,3].includes(cycle))return alert('Cycle must be 1 or 3.');
+  l.lastPaid=paid;l.cycle=cycle;l.nextDue=addMonths(paid,cycle);l.payments=l.payments||[];l.payments.push({paidDate:paid,nextDue:l.nextDue,cycle});
+  save();renderLoans(c);alert(`Interest recorded. Next due: ${fmt(l.nextDue)}`);
+}
+function editLoanCycle(id){
+  const c=db.customers.find(x=>x.phone===selectedPhone);const l=(c.loans||[]).find(x=>x.id===id);if(!l)return;
+  const cycle=Number(prompt('Next cycle: enter 1 or 3 months',String(l.cycle))||l.cycle);
+  if(![1,3].includes(cycle))return alert('Cycle must be 1 or 3.');
+  const base=l.lastPaid||today();l.cycle=cycle;l.nextDue=addMonths(base,cycle);save();renderLoans(c);alert(`Next due updated to ${fmt(l.nextDue)}`);
+}
+function setFollowTab(tab){followTab=tab;document.getElementById('tabInterest').classList.toggle('active',tab==='interest');document.getElementById('tabCustomer').classList.toggle('active',tab==='customer');renderFollowups()}
+function renderFollowups(){
+  const box=document.getElementById('followupList');
+  if(followTab==='customer'){
+    const arr=db.customers.filter(c=>c.followup);
+    box.innerHTML=arr.sort((a,b)=>a.followup.localeCompare(b.followup)).map(c=>`
+      <div class="item" onclick="openCustomer('${c.phone}')">
+        <h3>${esc(c.name)}</h3><div>📞 ${esc(c.phone)}</div><div class="muted">Customer follow-up: ${fmt(c.followup)}</div>
+        <div class="small">${esc(c.notes||'')}</div>
+      </div>`).join('')||'<div class="card">No customer follow-ups.</div>';
+    return;
+  }
+  const rows=[];
+  db.customers.forEach(c=>(c.loans||[]).forEach(l=>rows.push({c,l})));
+  rows.sort((a,b)=>a.l.nextDue.localeCompare(b.l.nextDue));
+  box.innerHTML=rows.map(({c,l})=>{
+    const [cl,label]=dueClass(l.nextDue);
+    return `<div class="item" onclick="openCustomer('${c.phone}')">
+      <h3>${esc(c.name)}</h3><div class="muted">📞 ${esc(c.phone)} · ₹${Number(l.amount).toLocaleString('en-IN')}</div>
+      <span class="badge ${cl}">${label}</span> <strong>${fmt(l.nextDue)}</strong>
+      <div class="small">Cycle: ${l.cycle} month(s)</div>
+    </div>`;
+  }).join('')||'<div class="card">No disbursed loans.</div>';
+}
+function deleteCustomer(){
+  const c=db.customers.find(x=>x.phone===selectedPhone);if(!c)return;
+  if(!confirm(`Delete ${c.name}? This cannot be undone without a backup.`))return;
+  db.customers=db.customers.filter(x=>x.phone!==selectedPhone);save();show('customers');renderCustomers();
+}
+async function exportBackup() {
+    try {
+        // Ask the user to choose the Backup folder
+        const folder = await window.showDirectoryPicker({
+            mode: "readwrite"
+        });
+
+        // Create/get customers.json inside the selected folder
+        const fileHandle = await folder.getFileHandle(
+            "customers.json",
+            { create: true }
+        );
+
+        // Prepare current data
+        const data = JSON.stringify(db, null, 2);
+
+        // Write/overwrite the same file
+        const writable = await fileHandle.createWritable();
+
+        await writable.write(data);
+
+        await writable.close();
+
+        alert("Backup saved successfully as customers.json");
+
+    } catch (error) {
+
+        if (error.name === "AbortError") {
+            return;
+        }
+
+        console.error(error);
+
+        alert("Backup failed: " + error.message);
+    }
+}
+function importBackup(e){
+  const f=e.target.files[0];if(!f)return;
+  const r=new FileReader();r.onload=()=>{try{const x=JSON.parse(r.result);if(!x||!Array.isArray(x.customers))throw 0;if(!confirm('Import this backup and replace current local data?'))return;db=x;save();alert('Backup restored.');goHome()}catch{alert('Invalid backup file.')}};r.readAsText(f);
+}
+updateStats();
+</script>
+</body>
+</html>
