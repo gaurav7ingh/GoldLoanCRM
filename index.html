@@ -16,7 +16,7 @@ input,textarea,select,button{width:100%;padding:12px;margin:6px 0 12px;border:1p
 </style>
 </head>
 <body>
-<header><h1>💰 Gold Loan CRM</h1></header>
+<header onclick="goHome()" role="button" tabindex="0" onkeydown="if(event.key==='Enter'||event.key===' ')goHome()"><h1>💰 Gold Loan CRM</h1></header>
 <main class="container">
 
 <section id="home">
@@ -261,42 +261,25 @@ function deleteCustomer(){
   if(!confirm(`Delete ${c.name}? This cannot be undone without a backup.`))return;
   db.customers=db.customers.filter(x=>x.phone!==selectedPhone);save();show('customers');renderCustomers();
 }
-async function exportBackup() {
-    try {
-        // Ask the user to choose the Backup folder
-        const folder = await window.showDirectoryPicker({
-            mode: "readwrite"
-        });
-
-        // Create/get customers.json inside the selected folder
-        const fileHandle = await folder.getFileHandle(
-            "customers.json",
-            { create: true }
-        );
-
-        // Prepare current data
-        const data = JSON.stringify(db, null, 2);
-
-        // Write/overwrite the same file
-        const writable = await fileHandle.createWritable();
-
-        await writable.write(data);
-
-        await writable.close();
-
-        alert("Backup saved successfully as customers.json");
-
-    } catch (error) {
-
-        if (error.name === "AbortError") {
-            return;
-        }
-
-        console.error(error);
-
-        alert("Backup failed: " + error.message);
-    }
+function exportBackup() {
+  try {
+    const data = JSON.stringify(db, null, 2);
+    const blob = new Blob([data], {type:'application/json'});
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = 'GoldLoanCRM.json';
+    document.body.appendChild(a);
+    a.click();
+    document.body.removeChild(a);
+    setTimeout(() => URL.revokeObjectURL(url), 1000);
+    alert('Backup downloaded as GoldLoanCRM.json');
+  } catch (error) {
+    console.error(error);
+    alert('Backup failed: ' + error.message);
+  }
 }
+
 function importBackup(e){
   const f=e.target.files[0];if(!f)return;
   const r=new FileReader();r.onload=()=>{try{const x=JSON.parse(r.result);if(!x||!Array.isArray(x.customers))throw 0;if(!confirm('Import this backup and replace current local data?'))return;db=x;save();alert('Backup restored.');goHome()}catch{alert('Invalid backup file.')}};r.readAsText(f);
